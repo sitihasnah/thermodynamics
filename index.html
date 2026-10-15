@@ -1,0 +1,980 @@
+Simulasi Termodinamik &amp; Gas Unggul
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<header class="bg-slate-800/80 backdrop-blur border-b border-slate-700/80 px-4 py-3 sticky top-0 z-30 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-blue-600/20 border border-blue-500/30 rounded-xl text-blue-400">
+                <i data-lucide="atom" class="w-6 h-6 animate-spin-slow"></i>
+            </div>
+            <div>
+                <h1 class="text-lg md:text-xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
+                    Simulasi Termodinamik &amp; Teori Kinetik Gas
+                </h1>
+                <p class="text-xs text-slate-400">Penyiasatan Interaktif Hukum Gas Unggul: <span class="font-mono-code text-blue-300 font-semibold">P · V = n · R · T</span></p>
+            </div>
+        </div>
+
+        <!-- Quick control buttons -->
+        <div class="flex items-center gap-2">
+            <button id="btnPlayPause" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 active:scale-95 transition text-white text-xs font-semibold rounded-lg shadow-sm">
+                <i id="playIcon" data-lucide="pause" class="w-4 h-4"></i>
+                <span id="playText">Jeda</span>
+            </button>
+            <button id="btnReset" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 active:scale-95 transition text-slate-200 text-xs font-semibold rounded-lg shadow-sm border border-slate-600">
+                <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                <span>Tetap Semula</span>
+            </button>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-7xl mx-auto w-full p-3 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-grow">
+
+    <!-- BAHAGIAN KIRI: Visual Canvas & Penunjuk Masa Nyata (7 cols) -->
+    <div class="lg:col-span-7 flex flex-col gap-4">
+
+        <!-- Kad Kanvas Simulasi -->
+        <div class="relative bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl overflow-hidden flex flex-col">
+            <div class="flex justify-between items-center mb-2 px-1">
+                <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                    <i data-lucide="gauge" class="w-4 h-4 text-cyan-400"></i> Silinder Gas Kinetik &amp; Tolok Tekanan
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-700/80 border border-slate-600 text-slate-300">
+                        <span id="fpsCounter" class="font-mono-code font-bold text-emerald-400">60</span> FPS
+                    </span>
+                    <span id="stateBadge" class="text-[11px] px-2.5 py-0.5 rounded-full font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        Mod Bebas
+                    </span>
+                </div>
+            </div>
+
+            <!-- Kanvas Utama -->
+            <div class="relative w-full aspect-[4/3] sm:aspect-[16/11] bg-slate-950 rounded-xl overflow-hidden border border-slate-800 shadow-inner flex items-center justify-center">
+                <canvas id="simCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+
+                <!-- Tooltip interaksi omboh -->
+                <div id="dragHint" class="absolute top-4 right-4 bg-slate-800/80 text-[11px] text-slate-300 px-2.5 py-1 rounded-md backdrop-blur border border-slate-700 pointer-events-none transition opacity-75 hidden sm:block">
+                    💡 Seret omboh atau laraskan slider
+                </div>
+            </div>
+
+            <!-- Kad Metrik Pantas di Bawah Kanvas -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3">
+                <div class="bg-slate-900/80 border border-slate-700/70 p-2.5 rounded-xl">
+                    <div class="text-[10px] text-slate-400 uppercase font-medium flex items-center gap-1">
+                        <i data-lucide="compass" class="w-3 h-3 text-cyan-400"></i> Tekanan (P)
+                    </div>
+                    <div class="text-lg font-bold font-mono-code text-cyan-300 mt-0.5">
+                        <span id="valP">100.0</span> <span class="text-xs font-normal text-slate-400">kPa</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-700/70 p-2.5 rounded-xl">
+                    <div class="text-[10px] text-slate-400 uppercase font-medium flex items-center gap-1">
+                        <i data-lucide="box" class="w-3 h-3 text-emerald-400"></i> Isipadu (V)
+                    </div>
+                    <div class="text-lg font-bold font-mono-code text-emerald-300 mt-0.5">
+                        <span id="valV">24.0</span> <span class="text-xs font-normal text-slate-400">L</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-700/70 p-2.5 rounded-xl">
+                    <div class="text-[10px] text-slate-400 uppercase font-medium flex items-center gap-1">
+                        <i data-lucide="thermometer" class="w-3 h-3 text-rose-400"></i> Suhu (T)
+                    </div>
+                    <div class="text-lg font-bold font-mono-code text-rose-300 mt-0.5">
+                        <span id="valT">300</span> <span class="text-xs font-normal text-slate-400">K</span>
+                    </div>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-700/70 p-2.5 rounded-xl">
+                    <div class="text-[10px] text-slate-400 uppercase font-medium flex items-center gap-1">
+                        <i data-lucide="zap" class="w-3 h-3 text-amber-400"></i> Tenaga Kinetik
+                    </div>
+                    <div class="text-lg font-bold font-mono-code text-amber-300 mt-0.5">
+                        <span id="valEk">6.21</span> <span class="text-[11px] font-normal text-slate-400">×10⁻²¹ J</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kad Penerangan Konsep Dinamik -->
+        <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl">
+            <div class="flex items-center gap-2 mb-2">
+                <div class="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300">Penerangan Fenomena Masa Nyata</h3>
+            </div>
+            <p id="explanationText" class="text-sm text-slate-300 leading-relaxed bg-slate-900/60 p-3.5 rounded-xl border border-slate-700/50">
+                Gas berada dalam keadaan stabil. Zarah-zarah gas bergerak secara rawak dan menghasilkan tekanan apabila berlanggar dengan dinding bekas silinder serta permukaan omboh.
+            </p>
+        </div>
+
+    </div>
+
+    <!-- BAHAGIAN KANAN: Kawalan Slider, Mod Pratetap & Cabaran Inkuiri (5 cols) -->
+    <div class="lg:col-span-5 flex flex-col gap-4">
+
+        <!-- Panel Pemilihan Proses Termodinamik -->
+        <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                <i data-lucide="sliders" class="w-4 h-4 text-indigo-400"></i> Mod Proses Termodinamik
+            </h2>
+            <div class="grid grid-cols-2 gap-2">
+                <button data-mode="free" class="mode-btn active px-3 py-2 text-xs font-medium rounded-xl border border-blue-500 bg-blue-600/30 text-white flex flex-col items-start gap-0.5 transition">
+                    <span class="font-bold">Mod Bebas</span>
+                    <span class="text-[10px] text-slate-300">Kawalan manual sepenuhnya</span>
+                </button>
+                <button data-mode="isothermal" class="mode-btn px-3 py-2 text-xs font-medium rounded-xl border border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700/50 flex flex-col items-start gap-0.5 transition">
+                    <span class="font-bold">Isoterma (T Malar)</span>
+                    <span class="text-[10px] text-slate-400">Hukum Boyle: P ∝ 1/V</span>
+                </button>
+                <button data-mode="isobaric" class="mode-btn px-3 py-2 text-xs font-medium rounded-xl border border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700/50 flex flex-col items-start gap-0.5 transition">
+                    <span class="font-bold">Isobarik (P Malar)</span>
+                    <span class="text-[10px] text-slate-400">Hukum Charles: V ∝ T</span>
+                </button>
+                <button data-mode="isochoric" class="mode-btn px-3 py-2 text-xs font-medium rounded-xl border border-slate-700 bg-slate-900/50 text-slate-300 hover:bg-slate-700/50 flex flex-col items-start gap-0.5 transition">
+                    <span class="font-bold">Isokorik (V Malar)</span>
+                    <span class="text-[10px] text-slate-400">Hukum Gay-Lussac: P ∝ T</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Panel Slider Pemboleh Ubah Gas -->
+        <div class="bg-slate-800/90 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col gap-4">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-emerald-400"></i> Pemboleh Ubah Gas</span>
+                <span class="text-[11px] font-normal text-slate-400">Laraskan nilai di bawah</span>
+            </h2>
+
+            <!-- Slider Suhu (T) -->
+            <div class="bg-slate-900/50 border border-slate-700/60 p-3 rounded-xl flex flex-col gap-2">
+                <div class="flex justify-between items-center text-xs">
+                    <label for="tempSlider" class="font-semibold text-rose-300 flex items-center gap-1.5">
+                        <i data-lucide="thermometer" class="w-3.5 h-3.5"></i> Suhu Mutlak (T):
+                    </label>
+                    <span class="font-mono-code font-bold text-rose-300 bg-rose-950/60 px-2 py-0.5 rounded border border-rose-800/60">
+                        <span id="sliderTempVal">300</span> K
+                    </span>
+                </div>
+                <input type="range" id="tempSlider" min="100" max="600" step="5" value="300" class="accent-rose-500">
+                <div class="flex justify-between text-[10px] text-slate-500 font-mono-code">
+                    <span>100 K (Sejuk/Ais)</span>
+                    <span>300 K (Bilik)</span>
+                    <span>600 K (Panas)</span>
+                </div>
+            </div>
+
+            <!-- Slider Isipadu (V) -->
+            <div id="volContainer" class="bg-slate-900/50 border border-slate-700/60 p-3 rounded-xl flex flex-col gap-2">
+                <div class="flex justify-between items-center text-xs">
+                    <label for="volSlider" class="font-semibold text-emerald-300 flex items-center gap-1.5">
+                        <i data-lucide="box" class="w-3.5 h-3.5"></i> Isipadu Silinder (V):
+                    </label>
+                    <span class="font-mono-code font-bold text-emerald-300 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/60">
+                        <span id="sliderVolVal">24.0</span> L
+                    </span>
+                </div>
+                <input type="range" id="volSlider" min="10" max="40" step="0.5" value="24" class="accent-emerald-500">
+                <div class="flex justify-between text-[10px] text-slate-500 font-mono-code">
+                    <span>10.0 L (Kecil)</span>
+                    <span>24.0 L</span>
+                    <span>40.0 L (Besar)</span>
+                </div>
+            </div>
+
+            <!-- Slider Bilangan Partikel (n) -->
+            <div class="bg-slate-900/50 border border-slate-700/60 p-3 rounded-xl flex flex-col gap-2">
+                <div class="flex justify-between items-center text-xs">
+                    <label for="particleSlider" class="font-semibold text-indigo-300 flex items-center gap-1.5">
+                        <i data-lucide="users" class="w-3.5 h-3.5"></i> Bilangan Zarah (n):
+                    </label>
+                    <span class="font-mono-code font-bold text-indigo-300 bg-indigo-950/60 px-2 py-0.5 rounded border border-indigo-800/60">
+                        <span id="sliderParticleVal">50</span> zarah
+                    </span>
+                </div>
+                <input type="range" id="particleSlider" min="15" max="120" step="5" value="50" class="accent-indigo-500">
+                <div class="flex justify-between text-[10px] text-slate-500 font-mono-code">
+                    <span>15 (Sedikit)</span>
+                    <span>50</span>
+                    <span>120 (Banyak)</span>
+                </div>
+            </div>
+
+            <!-- Suis Togol Visual Tambahan -->
+            <div class="flex items-center justify-between pt-1 border-t border-slate-700/50 text-xs text-slate-300">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="chkCollisions" class="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0">
+                    <span>Pamerkan kesan perlanggaran zarah</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" id="chkSpeedVector" checked="" class="rounded bg-slate-900 border-slate-700 text-blue-500 focus:ring-0">
+                    <span>Warna haba zarah</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Kad Cabaran Inkuiri Pembelajaran -->
+        <div class="bg-gradient-to-br from-slate-800/90 to-blue-950/40 border border-blue-500/30 rounded-2xl p-4 shadow-xl">
+            <div class="flex items-center gap-2 mb-2">
+                <i data-lucide="help-circle" class="w-4 h-4 text-amber-400"></i>
+                <h3 class="text-xs font-bold uppercase tracking-wider text-amber-300">Cabaran Inkuiri Pelajar</h3>
+            </div>
+            <div id="challengeBox" class="space-y-2">
+                <p id="challengeQuestion" class="text-xs text-slate-300 font-medium">
+                    🎯 <strong>Ujian 1:</strong> Pilih <span class="text-blue-300 font-semibold">Proses Isoterma</span>, kemudian kecilkan isipadu dari 24 L ke 12 L. Apakah yang terjadi kepada nilai Tekanan (P)? Mengapa?
+                </p>
+                <button id="btnNextChallenge" class="text-[11px] text-blue-400 hover:text-blue-300 font-semibold underline flex items-center gap-1 transition">
+                    Soalan Seterusnya →
+                </button>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script>
+    /* Inisialisasi ikon Lucide */
+    lucide.createIcons();
+
+    /* ==========================================================
+       KONSTANTA & PEMBOLEH UBAH SISTEM TERMODINAMIK
+       ========================================================== */
+    const CONST_R = 8.314; // Nilai R dalam unit skala paparan
+    const BOLTZMANN_K = 1.38e-23; // Untuk pengiraan Ek fizikal
+
+    // Keadaan Sistem
+    let systemState = {
+        T: 300, // Suhu (Kelvin)
+        V: 24, // Isipadu (Liter)
+        n: 50, // Bilangan partikel
+        targetP: 100, // Tekanan sasaran (kPa)
+        currentP: 100, // Tekanan semasa (melalui hukum gas / kadar hentaman)
+        mode: 'free', // 'free', 'isothermal', 'isobaric', 'isochoric'
+        isPaused: false,
+        showCollisions: false,
+        heatColor: true
+    };
+
+    // Tetapan tetap bagi mod tertentu
+    let lockedState = {
+        isothermalT: 300,
+        isobaricP: 100,
+        isochoricV: 24
+    };
+
+    /* ==========================================================
+       ELEMEN DOM
+       ========================================================== */
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+
+    const tempSlider = document.getElementById('tempSlider');
+    const volSlider = document.getElementById('volSlider');
+    const particleSlider = document.getElementById('particleSlider');
+    const volContainer = document.getElementById('volContainer');
+
+    const sliderTempVal = document.getElementById('sliderTempVal');
+    const sliderVolVal = document.getElementById('sliderVolVal');
+    const sliderParticleVal = document.getElementById('sliderParticleVal');
+
+    const valP = document.getElementById('valP');
+    const valV = document.getElementById('valV');
+    const valT = document.getElementById('valT');
+    const valEk = document.getElementById('valEk');
+
+    const explanationText = document.getElementById('explanationText');
+    const stateBadge = document.getElementById('stateBadge');
+    const fpsCounter = document.getElementById('fpsCounter');
+
+    const btnPlayPause = document.getElementById('btnPlayPause');
+    const playIcon = document.getElementById('playIcon');
+    const playText = document.getElementById('playText');
+    const btnReset = document.getElementById('btnReset');
+    const chkCollisions = document.getElementById('chkCollisions');
+    const chkSpeedVector = document.getElementById('chkSpeedVector');
+
+    const modeButtons = document.querySelectorAll('.mode-btn');
+
+    class Particle {
+        constructor(x, y, vx, vy) {
+            this.x = x;
+            this.y = y;
+            this.vx = vx;
+            this.vy = vy;
+            this.radius = 4;
+            this.mass = 1;
+        }
+
+        update(bounds, tempSpeedScale) {
+            this.x += this.vx * tempSpeedScale;
+            this.y += this.vy * tempSpeedScale;
+
+            let collided = false;
+
+            // Lantunan Dinding Kiri & Kanan
+            if (this.x - this.radius <= bounds.left) {
+                this.x = bounds.left + this.radius;
+                this.vx = Math.abs(this.vx);
+                collided = true;
+                wallImpulseSum += Math.abs(this.vx) * tempSpeedScale;
+            } else if (this.x + this.radius >= bounds.right) {
+                this.x = bounds.right - this.radius;
+                this.vx = -Math.abs(this.vx);
+                collided = true;
+                wallImpulseSum += Math.abs(this.vx) * tempSpeedScale;
+            }
+
+            // Lantunan Dinding Bawah & Omboh Atas
+            if (this.y + this.radius >= bounds.bottom) {
+                this.y = bounds.bottom - this.radius;
+                this.vy = -Math.abs(this.vy);
+                collided = true;
+                wallImpulseSum += Math.abs(this.vy) * tempSpeedScale;
+            } else if (this.y - this.radius <= bounds.pistonY) {
+                this.y = bounds.pistonY + this.radius;
+                this.vy = Math.abs(this.vy);
+                collided = true;
+                pistonImpulseSum += Math.abs(this.vy) * tempSpeedScale;
+                wallImpulseSum += Math.abs(this.vy) * tempSpeedScale;
+            }
+
+            return collided;
+        }
+    }
+
+    let particles = [];
+    let collisionSparks = [];
+    let wallImpulseSum = 0;
+    let pistonImpulseSum = 0;
+    let measuredP = 100;
+
+    function resizeCanvas() {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(dpr, dpr);
+    }
+    window.addEventListener('resize', resizeCanvas);
+
+    function initParticles(count) {
+        particles = [];
+        const simWidth = canvas.parentElement.clientWidth;
+        const simHeight = canvas.parentElement.clientHeight;
+
+        const left = simWidth * 0.18;
+        const right = simWidth * 0.68;
+        const bottom = simHeight * 0.78;
+        const top = simHeight * 0.25;
+
+        for (let i = 0; i < count; i++) {
+            const x = left + 10 + Math.random() * (right - left - 20);
+            const y = top + 10 + Math.random() * (bottom - top - 20);
+            const angle = Math.random() * Math.PI * 2;
+            const baseSpeed = 2.2 + Math.random() * 0.8;
+            particles.push(new Particle(
+                x,
+                y,
+                Math.cos(angle) * baseSpeed,
+                Math.sin(angle) * baseSpeed
+            ));
+        }
+    }
+
+    function calculateThermodynamics() {
+        // PV = nRT  =>  P = (n * T * R_skala) / V
+        // Faktor skala penentukuran: pada n=50, T=300K, V=24L => P ≈ 100 kPa
+        const scaleFactor = (100 * 24) / (50 * 300); // 0.16
+        const idealP = (systemState.n * systemState.T * scaleFactor) / systemState.V;
+
+        // Tekanan semasa diselaraskan secara licin (lerp)
+        systemState.currentP = idealP;
+
+        // Tenaga Kinetik Purata: Ek = (3/2) * k * T
+        const Ek = 1.5 * BOLTZMANN_K * systemState.T;
+
+        // Papar dalam antaramuka
+        valP.textContent = systemState.currentP.toFixed(1);
+        valV.textContent = parseFloat(systemState.V).toFixed(1);
+        valT.textContent = Math.round(systemState.T);
+        valEk.textContent = (Ek * 1e21).toFixed(2);
+
+        updateExplanation();
+    }
+
+    function updateExplanation() {
+        let text = "";
+        if (systemState.mode === 'isothermal') {
+            text = `<strong>Proses Isoterma (Suhu T = ${Math.round(systemState.T)} K malar):</strong> Mengikut <em>Hukum Boyle</em>, tekanan berkadar songsang dengan isipadu (P ∝ 1/V). Tenaga kinetik purata zarah tidak berubah, namun pemampatan isipadu menyebabkan zarah berlanggar dengan dinding bekas pada frekuensi yang lebih tinggi, lantas menggandakan tekanan.`;
+        } else if (systemState.mode === 'isobaric') {
+            text = `<strong>Proses Isobarik (Tekanan P ≈ 100 kPa malar):</strong> Mengikut <em>Hukum Charles</em>, isipadu gas berkadar terus dengan suhu mutlak (V ∝ T). Apabila gas dipanaskan, zarah bergerak lebih pantas dan menolak omboh ke atas untuk mengekalkan tekanan yang stabil di dalam silinder.`;
+        } else if (systemState.mode === 'isochoric') {
+            text = `<strong>Proses Isokorik (Isipadu V = ${parseFloat(systemState.V).toFixed(1)} L malar):</strong> Mengikut <em>Hukum Gay-Lussac</em>, tekanan berkadar terus dengan suhu mutlak (P ∝ T). Omboh terkunci. Apabila suhu meningkat, zarah bergerak semakin laju dan menghentam dinding dengan impuls serta frekuensi yang jauh lebih besar.`;
+        } else {
+            // Mod Bebas
+            if (systemState.T > 450) {
+                text = `Suhu tinggi (<span class="text-rose-400 font-semibold">${Math.round(systemState.T)} K</span>): Zarah menerima tenaga haba yang banyak, bergerak sangat pantas dan menghasilkan tekanan tinggi sebanyak <span class="text-cyan-400 font-semibold">${systemState.currentP.toFixed(1)} kPa</span>.`;
+            } else if (systemState.T < 180) {
+                text = `Suhu rendah (<span class="text-blue-300 font-semibold">${Math.round(systemState.T)} K</span>): Tenaga kinetik zarah berkurangan ketara, zarah bergerak perlahan dan frekuensi hentaman pada dinding menjadi rendah.`;
+            } else if (systemState.V < 15) {
+                text = `Isipadu mampat (<span class="text-emerald-300 font-semibold">${parseFloat(systemState.V).toFixed(1)} L</span>): Ruang pergerakan zarah sempit, menyebabkan bilangan pelanggaran per saat meningkat mendadak lalu meningkatkan tekanan gas.`;
+            } else {
+                text = `Gas unggul beroperasi mengikut hubungan <span class="font-mono-code text-blue-300 font-semibold">PV = nRT</span>. Laraskan mana-mana slider atau tukar mod proses di atas untuk menyiasat kesan setiap pemboleh ubah.`;
+            }
+        }
+        explanationText.innerHTML = text;
+    }
+
+    function drawAnalogGauge(ctx, centerX, centerY, radius, pressureVal) {
+        // Bulatan luar tolok
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        ctx.fillStyle = '#0f172a';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#38bdf8';
+        ctx.stroke();
+
+        // Skala tolok (0 hingga 250 kPa)
+        const minAngle = Math.PI * 0.75;
+        const maxAngle = Math.PI * 2.25;
+        const clampedP = Math.min(Math.max(pressureVal, 0), 250);
+        const angle = minAngle + (clampedP / 250) * (maxAngle - minAngle);
+
+        // Garisan senggatan (ticks)
+        for (let i = 0; i <= 10; i++) {
+            const tickAngle = minAngle + (i / 10) * (maxAngle - minAngle);
+            const innerR = radius - (i % 2 === 0 ? 8 : 4);
+            const outerR = radius - 2;
+            ctx.beginPath();
+            ctx.moveTo(centerX + Math.cos(tickAngle) * innerR, centerY + Math.sin(tickAngle) * innerR);
+            ctx.lineTo(centerX + Math.cos(tickAngle) * outerR, centerY + Math.sin(tickAngle) * outerR);
+            ctx.lineWidth = i % 2 === 0 ? 2 : 1;
+            ctx.strokeStyle = i >= 8 ? '#f43f5e' : '#94a3b8';
+            ctx.stroke();
+        }
+
+        // Label teks tengah
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '9px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText('kPa', centerX, centerY - radius * 0.35);
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px "JetBrains Mono"';
+        ctx.fillText(Math.round(pressureVal), centerX, centerY + radius * 0.5);
+
+        // Jarum penunjuk
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(centerX + Math.cos(angle) * (radius - 8), centerY + Math.sin(angle) * (radius - 8));
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = '#f43f5e';
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Paksi tengah jarum
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 3.5, 0, Math.PI * 2);
+        ctx.fillStyle = '#f8fafc';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    function drawThermometer(ctx, x, y, width, height, tempVal) {
+        ctx.save();
+        const bulbRadius = width * 1.1;
+        const tubeHeight = height - bulbRadius * 2;
+
+        // Latar tiub
+        ctx.fillStyle = '#1e293b';
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x - width / 2, y, width, tubeHeight, 6);
+        ctx.fill();
+        ctx.stroke();
+
+        // Bebola merkuri bawah
+        const bulbCenterY = y + tubeHeight + bulbRadius * 0.6;
+        ctx.beginPath();
+        ctx.arc(x, bulbCenterY, bulbRadius, 0, Math.PI * 2);
+        ctx.fillStyle = '#f43f5e';
+        ctx.fill();
+        ctx.stroke();
+
+        // Paras cecair merkuri
+        const fraction = Math.min(Math.max((tempVal - 100) / (600 - 100), 0.05), 0.98);
+        const mercuryH = tubeHeight * fraction;
+
+        ctx.fillStyle = '#f43f5e';
+        ctx.beginPath();
+        ctx.roundRect(x - width / 2 + 2, y + tubeHeight - mercuryH, width - 4, mercuryH + 4, 3);
+        ctx.fill();
+
+        // Senggatan suhu
+        ctx.strokeStyle = '#94a3b8';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 5; i++) {
+            const sy = y + tubeHeight - (i / 5) * tubeHeight;
+            ctx.beginPath();
+            ctx.moveTo(x + width / 2, sy);
+            ctx.lineTo(x + width / 2 + 4, sy);
+            ctx.stroke();
+        }
+
+        // Teks Suhu
+        ctx.fillStyle = '#fca5a5';
+        ctx.font = '10px "JetBrains Mono"';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${Math.round(tempVal)}K`, x + width / 2 + 7, y + tubeHeight - mercuryH + 3);
+        ctx.restore();
+    }
+
+    let flameTime = 0;
+
+    function drawHeatSource(ctx, centerX, bottomY, width, tempVal) {
+        ctx.save();
+        if (tempVal > 310) {
+            // Penunu Bunsen (Api Haba)
+            const flameHeight = Math.min(15 + (tempVal - 300) * 0.12, 50);
+            const burnerW = width * 0.5;
+
+            // Asas penunu
+            ctx.fillStyle = '#475569';
+            ctx.fillRect(centerX - burnerW / 2, bottomY + 12, burnerW, 8);
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(centerX - 8, bottomY + 4, 16, 8);
+
+            // Nyalaan api berlapis
+            for (let i = -1; i <= 1; i += 0.8) {
+                const fx = centerX + i * 16;
+                const wobble = Math.sin(flameTime * 8 + i * 2) * 5;
+                const currentH = flameHeight + Math.cos(flameTime * 12 + i) * 6;
+
+                // Lapisan api oren luar
+                const grad = ctx.createRadialGradient(fx, bottomY, 2, fx, bottomY - currentH, currentH * 0.8);
+                grad.addColorStop(0, '#f97316');
+                grad.addColorStop(0.6, '#ef4444');
+                grad.addColorStop(1, 'transparent');
+
+                ctx.beginPath();
+                ctx.moveTo(fx - 12, bottomY + 4);
+                ctx.quadraticCurveTo(fx + wobble, bottomY - currentH, fx + 12, bottomY + 4);
+                ctx.fillStyle = grad;
+                ctx.fill();
+
+                // Teras api biru dalam
+                ctx.beginPath();
+                ctx.moveTo(fx - 6, bottomY + 4);
+                ctx.quadraticCurveTo(fx, bottomY - currentH * 0.5, fx + 6, bottomY + 4);
+                ctx.fillStyle = '#38bdf8';
+                ctx.fill();
+            }
+
+            ctx.fillStyle = '#fdba74';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Pemanasan Hablur Haba', centerX, bottomY + 34);
+
+        } else if (tempVal < 260) {
+            // Blok Ais Penyejuk
+            const iceW = width * 0.6;
+            const iceH = 22;
+            ctx.fillStyle = 'rgba(125, 211, 252, 0.35)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(centerX - iceW / 2, bottomY + 6, iceW, iceH, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Butiran kristal ais
+            ctx.fillStyle = '#e0f2fe';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('❄️ Takungan Penyejuk Ais', centerX, bottomY + 21);
+        }
+        ctx.restore();
+    }
+
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+
+    function renderLoop(currentTime) {
+        requestAnimationFrame(renderLoop);
+
+        // Kira FPS
+        frameCount++;
+        if (currentTime - lastFpsUpdate >= 500) {
+            fpsCounter.textContent = Math.round((frameCount * 1000) / (currentTime - lastFpsUpdate));
+            frameCount = 0;
+            lastFpsUpdate = currentTime;
+        }
+
+        flameTime += 0.02;
+
+        const simWidth = canvas.parentElement.clientWidth;
+        const simHeight = canvas.parentElement.clientHeight;
+
+        // Bersihkan kanvas
+        ctx.clearRect(0, 0, simWidth, simHeight);
+
+        // Dimensi geometri silinder
+        const cylLeft = simWidth * 0.18;
+        const cylRight = simWidth * 0.68;
+        const cylWidth = cylRight - cylLeft;
+        const cylBottom = simHeight * 0.76;
+        const minPistonY = simHeight * 0.16; // Isipadu max (~40L)
+        const maxPistonY = simHeight * 0.60; // Isipadu min (~10L)
+
+        // Kedudukan omboh berkadar terus dengan V (10L hingga 40L)
+        const volFraction = (systemState.V - 10) / (40 - 10);
+        const pistonY = maxPistonY - volFraction * (maxPistonY - minPistonY);
+
+        const bounds = {
+            left: cylLeft + 4,
+            right: cylRight - 4,
+            bottom: cylBottom - 4,
+            pistonY: pistonY + 12
+        };
+
+        /* 1. Lukis Silinder Lutsinar */
+        ctx.save();
+        // Kaca silinder
+        const glassGrad = ctx.createLinearGradient(cylLeft, 0, cylRight, 0);
+        glassGrad.addColorStop(0, 'rgba(30, 41, 59, 0.85)');
+        glassGrad.addColorStop(0.5, 'rgba(51, 65, 85, 0.4)');
+        glassGrad.addColorStop(1, 'rgba(30, 41, 59, 0.85)');
+        ctx.fillStyle = glassGrad;
+        ctx.fillRect(cylLeft, pistonY, cylWidth, cylBottom - pistonY);
+
+        // Dinding logam silinder (kiri, kanan, bawah)
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'square';
+        ctx.beginPath();
+        ctx.moveTo(cylLeft, minPistonY - 10);
+        ctx.lineTo(cylLeft, cylBottom);
+        ctx.lineTo(cylRight, cylBottom);
+        ctx.lineTo(cylRight, minPistonY - 10);
+        ctx.stroke();
+
+        // Skala senggatan liter pada silinder
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '9px "JetBrains Mono"';
+        ctx.textAlign = 'right';
+        for (let v = 10; v <= 40; v += 10) {
+            const frac = (v - 10) / 30;
+            const markY = maxPistonY - frac * (maxPistonY - minPistonY) + 12;
+            ctx.fillRect(cylLeft - 6, markY, 6, 2);
+            ctx.fillText(v + 'L', cylLeft - 10, markY + 3);
+        }
+        ctx.restore();
+
+        /* 2. Kemaskini & Lukis Zarah Gas Kinetik */
+        // Kelajuan zarah berkadar dengan punca kuasa suhu: v_rms ∝ sqrt(T)
+        const tempSpeedScale = Math.sqrt(systemState.T / 300);
+
+        // Laraskan bilangan zarah jika berbeza
+        if (particles.length < systemState.n) {
+            for (let i = particles.length; i < systemState.n; i++) {
+                const x = bounds.left + 5 + Math.random() * (bounds.right - bounds.left - 10);
+                const y = bounds.pistonY + 5 + Math.random() * (bounds.bottom - bounds.pistonY - 10);
+                const angle = Math.random() * Math.PI * 2;
+                particles.push(new Particle(x, y, Math.cos(angle) * 2.5, Math.sin(angle) * 2.5));
+            }
+        } else if (particles.length > systemState.n) {
+            particles.splice(systemState.n);
+        }
+
+        // Pastikan tiada partikel terperangkap di atas omboh jika omboh turun
+        particles.forEach(p => {
+            if (p.y < bounds.pistonY) p.y = bounds.pistonY + 5;
+            if (p.y > bounds.bottom) p.y = bounds.bottom - 5;
+            if (p.x < bounds.left) p.x = bounds.left + 5;
+            if (p.x > bounds.right) p.x = bounds.right - 5;
+        });
+
+        // Kemaskini posisi partikel
+        if (!systemState.isPaused) {
+            particles.forEach(p => {
+                const didCollide = p.update(bounds, tempSpeedScale);
+                if (didCollide && systemState.showCollisions) {
+                    collisionSparks.push({
+                        x: p.x,
+                        y: p.y,
+                        life: 1.0,
+                        radius: 4 + Math.random() * 4
+                    });
+                }
+            });
+        }
+
+        // Lukis Jejak Lantunan / Percikan
+        if (systemState.showCollisions) {
+            for (let i = collisionSparks.length - 1; i >= 0; i--) {
+                const spk = collisionSparks[i];
+                ctx.beginPath();
+                ctx.arc(spk.x, spk.y, spk.radius * (1.2 - spk.life), 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(56, 189, 248, ${spk.life})`;
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                spk.life -= 0.08;
+                if (spk.life <= 0) collisionSparks.splice(i, 1);
+            }
+        }
+
+        // Lukis Zarah
+        particles.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+
+            if (systemState.heatColor) {
+                // Warna dinamik mengikut kelajuan & suhu (biru -> ungu -> merah terang)
+                const heatRatio = Math.min(Math.max((systemState.T - 100) / 500, 0), 1);
+                const r = Math.round(56 + heatRatio * (244 - 56));
+                const g = Math.round(189 - heatRatio * (189 - 63));
+                const b = Math.round(248 - heatRatio * (248 - 94));
+                ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+                ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.5)`;
+                ctx.shadowBlur = 5;
+            } else {
+                ctx.fillStyle = '#38bdf8';
+                ctx.shadowBlur = 0;
+            }
+
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        });
+
+        /* 3. Lukis Omboh Boleh Alih (Piston) */
+        ctx.save();
+        const pistonHeight = 16;
+        const pistonGrad = ctx.createLinearGradient(0, pistonY, 0, pistonY + pistonHeight);
+        pistonGrad.addColorStop(0, '#94a3b8');
+        pistonGrad.addColorStop(0.5, '#cbd5e1');
+        pistonGrad.addColorStop(1, '#64748b');
+
+        // Plat omboh
+        ctx.fillStyle = pistonGrad;
+        ctx.fillRect(cylLeft + 2, pistonY, cylWidth - 4, pistonHeight);
+        ctx.strokeStyle = '#475569';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cylLeft + 2, pistonY, cylWidth - 4, pistonHeight);
+
+        // Batang omboh (rod)
+        const rodWidth = 14;
+        const rodHeight = pistonY - minPistonY + 40;
+        const rodGrad = ctx.createLinearGradient(cylLeft + cylWidth / 2 - rodWidth / 2, 0, cylLeft + cylWidth / 2 + rodWidth / 2, 0);
+        rodGrad.addColorStop(0, '#64748b');
+        rodGrad.addColorStop(0.5, '#cbd5e1');
+        rodGrad.addColorStop(1, '#475569');
+
+        ctx.fillStyle = rodGrad;
+        ctx.fillRect(cylLeft + cylWidth / 2 - rodWidth / 2, pistonY - rodHeight, rodWidth, rodHeight);
+        ctx.strokeStyle = '#334155';
+        ctx.strokeRect(cylLeft + cylWidth / 2 - rodWidth / 2, pistonY - rodHeight, rodWidth, rodHeight);
+
+        // Pemegang atas omboh
+        ctx.fillStyle = '#475569';
+        ctx.beginPath();
+        ctx.roundRect(cylLeft + cylWidth / 2 - 25, pistonY - rodHeight - 8, 50, 10, 4);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+
+        /* 4. Lukis Paip Sambungan ke Tolok Tekanan */
+        ctx.save();
+        const pipeStartX = cylRight - 2;
+        const pipeStartY = cylBottom - 30;
+        const gaugeCenterX = simWidth * 0.85;
+        const gaugeCenterY = cylBottom - 70;
+
+        ctx.strokeStyle = '#64748b';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(pipeStartX, pipeStartY);
+        ctx.lineTo(gaugeCenterX - 25, pipeStartY);
+        ctx.lineTo(gaugeCenterX - 25, gaugeCenterY + 25);
+        ctx.stroke();
+
+        // Penunjuk Tolok Tekanan Analog
+        drawAnalogGauge(ctx, gaugeCenterX, gaugeCenterY, 38, systemState.currentP);
+
+        // Lukis Termometer Menegak di sebelah kiri silinder
+        const thermoX = cylLeft * 0.45;
+        const thermoY = cylBottom - 110;
+        drawThermometer(ctx, thermoX, thermoY, 12, 110, systemState.T);
+        ctx.restore();
+
+        /* 5. Lukis Sumber Haba / Sejuk Bawah Silinder */
+        drawHeatSource(ctx, cylLeft + cylWidth / 2, cylBottom, cylWidth, systemState.T);
+    }
+
+    function setSimulationMode(mode) {
+        systemState.mode = mode;
+        modeButtons.forEach(btn => {
+            if (btn.dataset.mode === mode) {
+                btn.classList.add('border-blue-500', 'bg-blue-600/30', 'text-white');
+                btn.classList.remove('border-slate-700', 'bg-slate-900/50', 'text-slate-300');
+            } else {
+                btn.classList.remove('border-blue-500', 'bg-blue-600/30', 'text-white');
+                btn.classList.add('border-slate-700', 'bg-slate-900/50', 'text-slate-300');
+            }
+        });
+
+        // Kemaskini label lencana
+        const labels = {
+            free: 'Mod Bebas',
+            isothermal: 'Isoterma (T Malar)',
+            isobaric: 'Isobarik (P Malar)',
+            isochoric: 'Isokorik (V Malar)'
+        };
+        stateBadge.textContent = labels[mode];
+
+        // Kunci/Buka slider bergantung kepada hukum
+        if (mode === 'isothermal') {
+            lockedState.isothermalT = systemState.T;
+            tempSlider.disabled = true;
+            volSlider.disabled = false;
+            tempSlider.parentElement.classList.add('opacity-50');
+            volContainer.classList.remove('opacity-50');
+        } else if (mode === 'isobaric') {
+            lockedState.isobaricP = systemState.currentP;
+            tempSlider.disabled = false;
+            volSlider.disabled = true; // Isipadu ditentukan oleh Suhu
+            tempSlider.parentElement.classList.remove('opacity-50');
+            volContainer.classList.add('opacity-50');
+        } else if (mode === 'isochoric') {
+            lockedState.isochoricV = systemState.V;
+            tempSlider.disabled = false;
+            volSlider.disabled = true; // Isipadu tetap
+            tempSlider.parentElement.classList.remove('opacity-50');
+            volContainer.classList.add('opacity-50');
+        } else {
+            // Bebas
+            tempSlider.disabled = false;
+            volSlider.disabled = false;
+            tempSlider.parentElement.classList.remove('opacity-50');
+            volContainer.classList.remove('opacity-50');
+        }
+
+        calculateThermodynamics();
+    }
+
+    // Slider Suhu
+    tempSlider.addEventListener('input', (e) => {
+        systemState.T = parseFloat(e.target.value);
+        sliderTempVal.textContent = Math.round(systemState.T);
+
+        if (systemState.mode === 'isobaric') {
+            // V berkadar terus dengan T: V = V_asal * (T / T_asal)
+            // Dihitung agar P kekal malar
+            const scaleFactor = (100 * 24) / (50 * 300);
+            const requiredV = (systemState.n * systemState.T * scaleFactor) / lockedState.isobaricP;
+            systemState.V = Math.min(Math.max(requiredV, 10), 40);
+            volSlider.value = systemState.V;
+            sliderVolVal.textContent = systemState.V.toFixed(1);
+        }
+
+        calculateThermodynamics();
+    });
+
+    // Slider Isipadu
+    volSlider.addEventListener('input', (e) => {
+        systemState.V = parseFloat(e.target.value);
+        sliderVolVal.textContent = systemState.V.toFixed(1);
+
+        calculateThermodynamics();
+    });
+
+    // Slider Partikel
+    particleSlider.addEventListener('input', (e) => {
+        systemState.n = parseInt(e.target.value, 10);
+        sliderParticleVal.textContent = systemState.n;
+        calculateThermodynamics();
+    });
+
+    // Mod Butang Pemilihan
+    modeButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            setSimulationMode(btn.dataset.mode);
+        });
+    });
+
+    // Butang Play / Pause
+    btnPlayPause.addEventListener('click', () => {
+        systemState.isPaused = !systemState.isPaused;
+        if (systemState.isPaused) {
+            playIcon.setAttribute('data-lucide', 'play');
+            playText.textContent = 'Sambung';
+            btnPlayPause.classList.replace('bg-emerald-600', 'bg-amber-600');
+            btnPlayPause.classList.replace('hover:bg-emerald-500', 'hover:bg-amber-500');
+        } else {
+            playIcon.setAttribute('data-lucide', 'pause');
+            playText.textContent = 'Jeda';
+            btnPlayPause.classList.replace('bg-amber-600', 'bg-emerald-600');
+            btnPlayPause.classList.replace('hover:bg-amber-500', 'hover:bg-emerald-500');
+        }
+        lucide.createIcons();
+    });
+
+    // Butang Reset
+    btnReset.addEventListener('click', () => {
+        systemState.T = 300;
+        systemState.V = 24;
+        systemState.n = 50;
+        tempSlider.value = 300;
+        volSlider.value = 24;
+        particleSlider.value = 50;
+        sliderTempVal.textContent = '300';
+        sliderVolVal.textContent = '24.0';
+        sliderParticleVal.textContent = '50';
+        setSimulationMode('free');
+        initParticles(50);
+        calculateThermodynamics();
+    });
+
+    // Checkbox Visibiliti
+    chkCollisions.addEventListener('change', (e) => {
+        systemState.showCollisions = e.target.checked;
+    });
+
+    chkSpeedVector.addEventListener('change', (e) => {
+        systemState.heatColor = e.target.checked;
+    });
+
+    const challenges = [{
+            q: "🎯 <strong>Cabaran 1 (Hukum Boyle):</strong> Pilih mod <em>Isoterma</em>. Kecilkan isipadu V separuh (24 L → 12 L). Apakah kesan terhadap Tekanan (P)?",
+        },
+        {
+            q: "🔥 <strong>Cabaran 2 (Hukum Gay-Lussac):</strong> Pilih mod <em>Isokorik</em>. Gandakan suhu T daripada 200 K ke 400 K. Perhatikan bagaimana tolok tekanan bertindak balas!",
+        },
+        {
+            q: "🎈 <strong>Cabaran 3 (Hukum Charles):</strong> Pilih mod <em>Isobarik</em>. Tingkatkan suhu T dan perhatikan omboh bergerak secara automatik untuk mengekalkan tekanan seimbang.",
+        },
+        {
+            q: "⚛️ <strong>Cabaran 4 (Teori Kinetik):</strong> Dalam mod Bebas, tambah bilangan zarah (n) kepada 100 pada isipadu tetap. Mengapakah tekanan silinder meningkat?",
+        }
+    ];
+
+    let currentChallengeIndex = 0;
+    const challengeQuestion = document.getElementById('challengeQuestion');
+    const btnNextChallenge = document.getElementById('btnNextChallenge');
+
+    btnNextChallenge.addEventListener('click', () => {
+        currentChallengeIndex = (currentChallengeIndex + 1) % challenges.length;
+        challengeQuestion.innerHTML = challenges[currentChallengeIndex].q;
+    });
+
+    window.addEventListener('load', () => {
+        resizeCanvas();
+        initParticles(systemState.n);
+        calculateThermodynamics();
+        requestAnimationFrame(renderLoop);
+    });
+</script>
